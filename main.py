@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import requests
 from datetime import datetime
+import asyncio
 
 # --- CONFIGURATION ---
 TELEGRAM_TOKEN = "7601388563:AAH2QIjzEGQaUcFIbn5TqAy9nI46HxH1uIc"
@@ -14,7 +15,7 @@ SUPABASE_TABLE = "answers"
 # --- TELEGRAM SETUP ---
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
-tg_app = Application.builder().token(TELEGRAM_TOKEN).build()
+tg_app = None
 
 # --- QUESTIONS ---
 QUESTIONS = [
@@ -66,19 +67,22 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Оценка прервана.")
     return ConversationHandler.END
 
-# --- HANDLERS ---
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start", start)],
-    states={
-        QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, q1)],
-        QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, q2)],
-        COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, comment)]
-    },
-    fallbacks=[CommandHandler("cancel", cancel)]
-)
-
-tg_app.add_handler(conv_handler)
-
+# --- FASTAPI STARTUP ---
 @app.on_event("startup")
 async def on_startup():
-    tg_app.create_task(tg_app.run_polling())
+    global tg_app
+    from telegram.ext import ApplicationBuilder
+    tg_app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, q1)],
+            QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, q2)],
+            COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, comment)]
+        },
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+
+    tg_app.add_handler(conv_handler)
+    asyncio.create_task(tg_app.run_polling())
