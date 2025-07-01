@@ -70,16 +70,24 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # --- START TELEGRAM BOT ---
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+async def main():
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start", start)],
-    states={
-        QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, q1)],
-        QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, q2)],
-        COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, comment)]
-    },
-    fallbacks=[CommandHandler("cancel", cancel)]
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, q1)],
+            QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, q2)],
+            COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, comment)]
+        },
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+
+    app.add_handler(conv_handler)
+    await app.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 )
 
 app.add_handler(conv_handler)
