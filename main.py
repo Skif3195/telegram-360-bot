@@ -5,21 +5,25 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import requests
 from datetime import datetime
 
+# --- CONFIGURATION ---
 TELEGRAM_TOKEN = "7601388563:AAH2QIjzEGQaUcFIbn5TqAy9nI46HxH1uIc"
 SUPABASE_URL = "https://exfvokaphpjrxsoueohj.supabase.co"
 SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4ZnZva2FwaHBqcnhzb3Vlb2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEzNzg2NzEsImV4cCI6MjA2Njk1NDY3MX0._8IrkMmBQPLPfcjNGW-Ecirh4kgpKwIkB5PD-_o52XA"
 SUPABASE_TABLE = "answers"
 
+# --- TELEGRAM SETUP ---
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 tg_app = Application.builder().token(TELEGRAM_TOKEN).build()
 
+# --- QUESTIONS ---
 QUESTIONS = [
     "Оцени инициативность (1-5):",
     "Оцени коммуникабельность (1-5):",
     "Что бы ты посоветовал улучшить?"
 ]
 
+# --- STATES ---
 QUESTION1, QUESTION2, COMMENT = range(3)
 user_responses = {}
 
@@ -62,6 +66,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Оценка прервана.")
     return ConversationHandler.END
 
+# --- HANDLERS ---
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start", start)],
     states={
