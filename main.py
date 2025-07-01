@@ -1,22 +1,18 @@
 import logging
-import os  # Добавлено для чтения переменных окружения
-from fastapi import FastAPI
+import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 import requests
 from datetime import datetime
-import asyncio
 
-# --- CONFIGURATION ---
+# --- CONFIG ---
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
 SUPABASE_TABLE = "answers"
 
-# --- TELEGRAM SETUP ---
+# --- LOGGING ---
 logging.basicConfig(level=logging.INFO)
-app = FastAPI()
-tg_app = None
 
 # --- QUESTIONS ---
 QUESTIONS = [
@@ -25,7 +21,6 @@ QUESTIONS = [
     "Что бы ты посоветовал улучшить?"
 ]
 
-# --- STATES ---
 QUESTION1, QUESTION2, COMMENT = range(3)
 user_responses = {}
 
@@ -68,11 +63,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Оценка прервана.")
     return ConversationHandler.END
 
-# --- FASTAPI STARTUP ---
-@app.on_event("startup")
-async def on_startup():
-    global tg_app
-    tg_app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+async def main():
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -84,5 +76,10 @@ async def on_startup():
         fallbacks=[CommandHandler("cancel", cancel)]
     )
 
-    tg_app.add_handler(conv_handler)
-    asyncio.create_task(tg_app.run_polling())
+    app.add_handler(conv_handler)
+    await app.run_polling()
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+
