@@ -1,18 +1,23 @@
 import logging
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes,
+    ConversationHandler
+)
 import requests
 from datetime import datetime
+import asyncio
 
-# --- CONFIG ---
+# --- CONFIGURATION ---
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
 SUPABASE_TABLE = "answers"
-
-# --- LOGGING ---
-logging.basicConfig(level=logging.INFO)
 
 # --- QUESTIONS ---
 QUESTIONS = [
@@ -21,6 +26,7 @@ QUESTIONS = [
     "Что бы ты посоветовал улучшить?"
 ]
 
+# --- STATES ---
 QUESTION1, QUESTION2, COMMENT = range(3)
 user_responses = {}
 
@@ -63,23 +69,17 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Оценка прервана.")
     return ConversationHandler.END
 
-async def main():
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+# --- START TELEGRAM BOT ---
+app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, q1)],
-            QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, q2)],
-            COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, comment)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)]
-    )
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("start", start)],
+    states={
+        QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, q1)],
+        QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, q2)],
+        COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, comment)]
+    },
+    fallbacks=[CommandHandler("cancel", cancel)]
+)
 
-    app.add_handler(conv_handler)
-    await app.run_polling()
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
-
+app.add_handler(conv_handler)
